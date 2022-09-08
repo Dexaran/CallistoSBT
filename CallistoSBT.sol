@@ -180,13 +180,6 @@ abstract contract CallistoSBT is ICallistoSBT, Ownable {
     function _exists(uint256 tokenId) internal view returns (bool) {
         return _owners[tokenId] != address(0);
     }
-    
-    function _safeMint(
-        address to,
-        uint256 tokenId
-    ) internal virtual {
-        _mint(to, tokenId);
-    }
 
     function configureSBT(uint256 tokenId) internal
     {
