@@ -224,6 +224,12 @@ abstract contract CallistoSBT is ICallistoSBT, Ownable {
             _tokenProperties[tokenId].properties.push("");
         }
     }
+
+    function burn(address from, uint256 tokenId, bytes calldata reason) public onlyOwner
+    {
+        _burn(tokenId);
+        emit TransferData (reason);
+    }
     
     function _mint(address to, uint256 tokenId) internal {
         require(to != address(0), "SBT: mint to the zero address");
