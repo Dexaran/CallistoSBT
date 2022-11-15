@@ -198,20 +198,31 @@ abstract contract CallistoSBT is ICallistoSBT, Ownable {
 
     function setProperty(uint256 tokenId, uint256 propertyId, string calldata content) public
     {
-        require(_writingPermission[msg.sender][tokenId][propertyId]);
+        if(propertyId == 0)
+        {
+            require(msg.sender == ownerOf(tokenId));
+        }
+        else
+        {
+            require(_writingPermission[msg.sender][tokenId][propertyId]);
+        }
         _tokenProperties[tokenId].properties[propertyId] = content;
     }
 
     function setPermission(address who, uint256 tokenId, uint256 propertyId, bool permission) public onlyOwner
     {
+        require(propertyId != 0, "Cannot modify writing permission to property[0]");
         _writingPermission[who][tokenId][propertyId] = permission;
     }
 
-    function addProperties(uint256 tokenId, uint8 propertiesCount) public onlyOwner
+    function addPropertiesWithPermission(uint256 tokenId, uint8 propertiesCount, address permission_address) public onlyOwner
     {
+        uint256 _propertyIndex = _tokenProperties[tokenId].properties.length;  // Store the number of already existing properties.
         for (; propertiesCount > 0; propertiesCount--)
         {
             _tokenProperties[tokenId].properties.push("");
+            _writingPermission[permission_address][tokenId][_propertyIndex] = true; // Assign permission on a new property.
+            _propertyIndex++; // Increase the "current property to assign permission to" value.
         }
     }
 
