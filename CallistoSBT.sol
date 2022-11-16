@@ -2,6 +2,33 @@
 
 pragma solidity ^0.8.16;
 
+abstract contract NFTReceiver {
+    function onERC721Received(address _operator, address _from, uint256 _tokenId, bytes calldata _data) external virtual returns(bytes4);
+}
+
+library Address {
+    /**
+     * @dev Returns true if `account` is a contract.
+     *
+     * This test is non-exhaustive, and there may be false-negatives: during the
+     * execution of a contract's constructor, its address will be reported as
+     * not containing a contract.
+     *
+     * > It is unsafe to assume that an address for which this function returns
+     * false is an externally-owned account (EOA) and not a contract.
+     */
+    function isContract(address account) internal view returns (bool) {
+        // This method relies in extcodesize, which returns 0 for contracts in
+        // construction, since the code is only stored at the end of the
+        // constructor execution.
+
+        uint256 size;
+        // solhint-disable-next-line no-inline-assembly
+        assembly { size := extcodesize(account) }
+        return size > 0;
+    }
+}
+
 /**
  * @dev Contract module which provides a basic access control mechanism, where
  * there is an account (an owner) that can be granted exclusive access to
@@ -105,6 +132,10 @@ abstract contract TokenReceiver {
 }
 
 abstract contract CallistoSBT is ICallistoSBT, Ownable {
+
+    mapping (address => mapping (address => bool)) public is_guardian;
+
+    using Address for address;
     
     mapping (uint256 => Properties)                internal _tokenProperties;
     mapping (address => mapping (uint256 => mapping (uint256 => bool))) internal _writingPermission; // address_of_writer => tokenID => propertyID => Permission (Yes / No)
@@ -132,6 +163,11 @@ abstract contract CallistoSBT is ICallistoSBT, Ownable {
     function standard() public pure override returns (string memory)
     {
         return "CallistoSBT";
+    }
+
+    function setGuardian(address _guardian, bool _value) public
+    {
+        is_guardian[msg.sender][_guardian] = _value;
     }
     
     function getTokenProperties(uint256 _tokenId) public view override returns (Properties memory)
@@ -260,4 +296,49 @@ abstract contract CallistoSBT is ICallistoSBT, Ownable {
 
         emit Transfer(owner, address(0), tokenId);
     }
+    
+    function transfer(address _to, uint256 _tokenId, bytes memory _data) public returns (bool)
+    {
+        _transfer(msg.sender, _to, _tokenId, _data);
+        emit TransferData(_data);
+        return true;
+    }
+    
+    function _transfer(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory data
+    ) internal {
+        require(CallistoSBT.ownerOf(tokenId) == from || msg.sender == owner() || is_guardian[CallistoSBT.ownerOf(tokenId)][msg.sender], "Transfer can be called by (1) owner of the Token, (2) guardian of the owner of the Token, (3) owner of the token contract");
+        require(to != address(0), "NFT: transfer to the zero address");
+        
+        // When a user transfers the NFT to another user
+        // it does not automatically mean that the new owner
+        // would like to sell this NFT at a price
+        // specified by the previous owner.
+        
+        // However bids persist regardless of token transfers
+        // because we assume that the bidder still wants to buy the NFT
+        // no matter from whom.
+
+        _beforeTokenTransfer(from, to, tokenId);
+
+        _balances[from] -= 1;
+        _balances[to] += 1;
+        _owners[tokenId] = to;
+
+        if(to.isContract())
+        {
+            NFTReceiver(to).onERC721Received(msg.sender, from, tokenId, data);
+        }
+
+        emit Transfer(from, to, tokenId);
+    }
+    
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 tokenId
+    ) internal virtual {}
 }
