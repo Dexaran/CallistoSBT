@@ -124,7 +124,7 @@ abstract contract CallistoSBT is ICallistoSBT, Ownable {
     /**
      * @dev Initializes the contract by setting a `name` and a `symbol` to the token collection.
      */
-    constructor(string memory name_, string memory symbol_, uint256 _defaultFee) {
+    constructor(string memory name_, string memory symbol_) {
         _name   = name_;
         _symbol = symbol_;
     }
