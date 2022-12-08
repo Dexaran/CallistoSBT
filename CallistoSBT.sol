@@ -67,8 +67,6 @@ abstract contract Ownable {
 
 interface ICallistoSBT {
 
-    event NewBid       (uint256 indexed tokenID, uint256 indexed bidAmount, bytes bidData);
-    event TokenTrade   (uint256 indexed tokenID, address indexed new_owner, address indexed previous_owner, uint256 priceInWEI);
     event Transfer     (address indexed from, address indexed to, uint256 indexed tokenId);
     event TransferData (bytes data);
     
